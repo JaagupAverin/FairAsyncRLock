@@ -15,11 +15,17 @@ because [python decided not to support RLock in asyncio](https://discuss.python.
 their [argument](https://discuss.python.org/t/asyncio-rlock-reentrant-locks-for-async-python/21509/2) being that every
 extra bit of functionality adds to maintenance cost.
 
-Install with
+Install normally for asyncio support:
 
 ```bash
-pip install fair-async-rlock
+
 ```
+
+or with AnyIO support:
+
+```bash
+pip install fair-async-rlock[anyio]
+````
 
 ## About Fair Reentrant Lock for AsyncIO
 
