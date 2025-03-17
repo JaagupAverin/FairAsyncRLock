@@ -1,5 +1,4 @@
-import asyncio
-from typing import TypeVar, Type
+from typing import TypeVar
 
 import anyio
 
@@ -20,8 +19,8 @@ class AnyIOFairAsyncRLock(BaseFairAsyncRLock[anyio.TaskInfo, anyio.Event]):
     def _get_current_task(self) -> anyio.TaskInfo:
         return anyio.get_current_task()
 
-    def _get_cancelled_exc_class(self) -> Type[BaseException]:
+    def _get_cancelled_exc_class(self) -> type[BaseException]:
         return anyio.get_cancelled_exc_class()
 
-    def _get_wake_event(self) -> asyncio.Event:
+    def _get_wake_event(self) -> anyio.Event:
         return anyio.Event()

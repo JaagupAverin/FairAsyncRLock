@@ -1,19 +1,24 @@
 from abc import ABC, abstractmethod
 from collections import deque
 
-from typing import Generic, TypeVar, Type
+from typing import Any, Generic, TypeVar, Protocol
 
-TaskType = TypeVar('TaskType')
-EventType = TypeVar('EventType')
+class _Event(Protocol):
+    def set(self) -> None: ...
+    async def wait(self) -> Any: ...
+
+
+TaskType = TypeVar("TaskType")
+EventType = TypeVar("EventType", bound=_Event)
 
 
 class AbstractFairAsyncRLock(ABC, Generic[TaskType, EventType]):
     @abstractmethod
-    def _get_current_task(self) -> TaskType:
+    def _get_current_task(self) -> TaskType | None:
         ...
 
     @abstractmethod
-    def _get_cancelled_exc_class(self) -> Type[BaseException]:
+    def _get_cancelled_exc_class(self) -> type[BaseException]:
         ...
 
     @abstractmethod
