@@ -1,33 +1,48 @@
-import asyncio
+from abc import ABC, abstractmethod
 from collections import deque
 
-__all__ = [
-    'FairAsyncRLock'
-]
+from typing import Generic, TypeVar, Type
+
+TaskType = TypeVar('TaskType')
+EventType = TypeVar('EventType')
 
 
-class FairAsyncRLock:
+class AbstractFairAsyncRLock(ABC, Generic[TaskType, EventType]):
+    @abstractmethod
+    def _get_current_task(self) -> TaskType:
+        ...
+
+    @abstractmethod
+    def _get_cancelled_exc_class(self) -> Type[BaseException]:
+        ...
+
+    @abstractmethod
+    def _get_wake_event(self) -> EventType:
+        ...
+
+
+class BaseFairAsyncRLock(AbstractFairAsyncRLock[TaskType, EventType]):
     """
     A fair reentrant lock for async programming. Fair means that it respects the order of acquisition.
     """
 
     def __init__(self):
-        self._owner: asyncio.Task | None = None
-        self._count = 0
-        self._owner_transfer = False
-        self._queue = deque()
+        self._owner: TaskType | None = None
+        self._count: int = 0
+        self._owner_transfer: bool = False
+        self._queue: deque[EventType] = deque()
 
-    def is_owner(self, task=None):
+    def is_owner(self, task: TaskType | None = None) -> bool:
         if task is None:
-            task = asyncio.current_task()
+            task = self._get_current_task()
         return self._owner == task
 
     def locked(self) -> bool:
         return self._owner is not None
 
-    async def acquire(self):
+    async def acquire(self) -> None:
         """Acquire the lock."""
-        me = asyncio.current_task()
+        me = self._get_current_task()
 
         # If the lock is reentrant, acquire it immediately
         if self.is_owner(task=me):
@@ -41,7 +56,7 @@ class FairAsyncRLock:
             return
 
         # Create an event for this task, to notify when it's ready for acquire
-        event = asyncio.Event()
+        event = self._get_wake_event()
         self._queue.append(event)
 
         # Wait for the lock to be free, then acquire
@@ -50,7 +65,7 @@ class FairAsyncRLock:
             self._owner_transfer = False
             self._owner = me
             self._count = 1
-        except asyncio.CancelledError:
+        except self._get_cancelled_exc_class():
             try:  # if in queue, then cancelled before release
                 self._queue.remove(event)
             except ValueError:  # otherwise, release happened, this was next, and we simulate passing on
@@ -60,7 +75,7 @@ class FairAsyncRLock:
                 self._current_task_release()
             raise
 
-    def _current_task_release(self):
+    def _current_task_release(self) -> None:
         self._count -= 1
         if self._count == 0:
             self._owner = None
@@ -73,7 +88,7 @@ class FairAsyncRLock:
 
     def release(self):
         """Release the lock"""
-        me = asyncio.current_task()
+        me = self._get_current_task()
 
         if self._owner is None:
             raise RuntimeError(f"Cannot release un-acquired lock. {me} tried to release.")

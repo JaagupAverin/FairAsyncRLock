@@ -1,3 +1,5 @@
 flake8
 pytest
 pytest-asyncio
+trio==0.25.*
+anyio>=4.5

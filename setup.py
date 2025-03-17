@@ -14,5 +14,6 @@ setup(
     install_requires=load_requirements("requirements.txt"),
     extras_require={
         "tests": load_requirements("requirements-tests.txt"),
+        'anyio': load_requirements("requirements-anyio.txt")
     }
 )
